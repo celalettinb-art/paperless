@@ -22,6 +22,7 @@ sed -i 's/^#\?PermitRootLogin.*/PermitRootLogin yes/' /etc/ssh/sshd_config
 systemctl restart sshd
 
 check_exit $? "Allow SSH root login"
+echo
 
 ### ===========================================
 ### Generate random password
@@ -32,6 +33,7 @@ echo "$SCAN_PW" > /root/scan.creds
 chmod 600 /root/scan.creds
 
 check_exit $? "Generate random password"
+echo
 
 ### ===========================================
 ### Install OCR languages
@@ -41,6 +43,7 @@ apt update
 apt install -y tesseract-ocr-deu tesseract-ocr-eng tesseract-ocr-tur
 
 check_exit $? "Install OCR languages"
+echo
 
 ### ===========================================
 ### Customize paperless configuration
@@ -57,6 +60,7 @@ PAPERLESS_TIME_ZONE=Europe/Berlin
 EOT
 
 check_exit $? "Customize paperless configuration"
+echo
 
 ### ===========================================
 ### Install Docker
@@ -80,6 +84,7 @@ systemctl enable docker
 systemctl start docker
 
 check_exit $? "Install Docker"
+echo
 
 ### ===========================================
 ### Customize start script for Gotenberg & Tika
@@ -93,6 +98,7 @@ mkdir -p "$(dirname "$SCRIPT")"
 cat <<'EOT' > "$SCRIPT"
 
 check_exit $? "Customize start script for Gotenberg & Tika"
+echo
 
 ### ===========================================
 ### Create Gotenberg & Tike containers
@@ -119,6 +125,7 @@ chmod +x "$SCRIPT"
 "$SCRIPT"
 
 check_exit $? "Create Gotenberg & Tike containers"
+echo
 
 ### ===========================================
 ### Configure Tika & Gotenberg in Paperless
@@ -131,6 +138,7 @@ PAPERLESS_TIKA_GOTENBERG_ENDPOINT=http://localhost:3000
 EOT
 
 check_exit $? "Configure Tika & Gotenberg in Paperless"
+echo
 
 ### ===========================================
 ### Install & configure Samba and create scan User
@@ -145,6 +153,7 @@ echo -e "$SCAN_PW\n$SCAN_PW" | smbpasswd -a scan
 cp /etc/samba/smb.conf /etc/samba/smb.conf.bak
 
 check_exit $? "Install & configure Samba and create scan User"
+echo
 
 ### ===========================================
 ### Disable [homes] and add [consume]
@@ -173,6 +182,7 @@ systemctl enable smbd
 
 
 check_exit $? "Disable [homes] and add [consume]"
+echo
 
 echo
 echo -e "\e[1;32m========================================\e[0m"
