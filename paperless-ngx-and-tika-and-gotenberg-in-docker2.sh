@@ -3,8 +3,8 @@
 function post_install_paperless() {
   msg_info "Running Paperless post-install configuration"
 
-  pct exec "$CTID" -- bash <<'EOF'
-set -e
+  #pct exec "$CTID" -- bash <<'EOF'
+#set -e
 
 echo "SSH Root Login erlauben"
 sed -i 's/^#\?PermitRootLogin.*/PermitRootLogin yes/' /etc/ssh/sshd_config
