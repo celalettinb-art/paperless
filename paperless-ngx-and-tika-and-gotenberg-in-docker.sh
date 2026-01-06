@@ -201,11 +201,11 @@ PAPERLESS_PORT="${PAPERLESS_PORT:-8000}"
 echo
 echo -e "\e[1;32m========================================\e[0m"
 echo -e "👍 " "\e[1;32mPost-installation complete\e[0m"
-echo -e "💡 " "\e[32mPaperless is running at: http://${IP}:${PAPERLESS_PORT}\e[0m"
 echo -e "🧾 " "\e[1;32mSamba User: scan\e[0m"
 echo -e "🧾 " "\e[1;32mSamba Password: $SCAN_PW\e[0m"
 echo -e "🧾 " "\e[1;32mYou can read the password for scan here afterwards: cat ~/scan.creds\e[0m"
 echo -e "⚠️ " "\e[1;32mPlease be sure to change it! (smbpasswd -a scan)\e[0m"
+echo -e "💡 " "\e[1;32mPaperless is running at: http://${IP}:${PAPERLESS_PORT}\e[0m"
 echo -e "\e[1;32m========================================\e[0m"
 }
 
