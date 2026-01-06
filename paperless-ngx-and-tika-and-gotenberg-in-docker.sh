@@ -196,6 +196,17 @@ systemctl enable smbd
 
 check_exit $? "Disable [homes] and add [consume]"
 echo
+
+### ===========================================
+### All relevant services will be restarted
+### ===========================================
+echo -e "👉 " "\e[1;33mAll relevant services will be restarted\e[0m"
+for service in paperless-consumer.service paperless-task-queue.service paperless-webserver.service; do
+    echo -e "\e[33m⚙ Restarting $service...\e[0m"
+    systemctl restart "$service"
+    check_exit $? "$service restart"
+done
+
 IP=$(hostname -I | awk '{print $1}')
 PAPERLESS_PORT="${PAPERLESS_PORT:-8000}"
 echo
