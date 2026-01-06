@@ -172,7 +172,17 @@ echo
 ### Disable [homes] and add [consume]
 ### ===========================================
 echo -e "👉 " "\e[1;33mDisable [homes] and add [consume]\e[0m"
-sed -i '/^\[homes\]/a \   available = no' /etc/samba/smb.conf
+SMB_CONF="/etc/samba/smb.conf"
+if grep -q "^\[homes\]" "$SMB_CONF"; then
+    if ! sed -n '/^\[homes\]/,/^\[/{/^[[:space:]]*available[[:space:]]*=/p}' "$SMB_CONF" | grep -q "available"; then
+        sed -i '/^\[homes\]/a\   available = no' "$SMB_CONF"
+        echo -e "\e[32m✔ Samba: [homes] available = no added\e[0m"
+    else
+        echo -e "\e[33mℹ Samba: [homes] available already configured\e[0m"
+    fi
+else
+    echo -e "\e[33mℹ Samba: [homes] section not found\e[0m"
+fi
 grep -q "\[consume\]" /etc/samba/smb.conf || cat <<'EOT' >> /etc/samba/smb.conf
 
 [consume]
