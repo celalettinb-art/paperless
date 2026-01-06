@@ -1,6 +1,7 @@
 # bash -c "$(curl -fsSL https://raw.githubusercontent.com/celalettinb-art/paperless/refs/heads/main/paperless-ngx-and-tika-and-gotenberg-in-docker2.sh)"
 
 function post_install_paperless() {
+
 echo "SSH Root Login erlauben"
 sed -i 's/^#\?PermitRootLogin.*/PermitRootLogin yes/' /etc/ssh/sshd_config
 systemctl restart sshd
@@ -38,9 +39,7 @@ cp $SCRIPT ${SCRIPT}.bak
 
 cat <<'EOT' > $SCRIPT
 #!/usr/bin/env bash
-docker run --restart=always -p 3000:3000 -d gotenberg/gotenberg:latest \
-  gotenberg --chromium-disable-javascript=true --chromium-allow-list="file:///tmp/.*"
-
+docker run --restart=always -p 3000:3000 -d gotenberg/gotenberg:latest gotenberg --chromium-disable-javascript=true --chromium-allow-list="file:///tmp/.*"
 docker run --restart=always -p 9998:9998 -d apache/tika:latest
 EOT
 
@@ -85,7 +84,6 @@ systemctl restart smbd
 systemctl enable smbd
 
 echo "Post-Install abgeschlossen"
-EOF
 }
 
 
