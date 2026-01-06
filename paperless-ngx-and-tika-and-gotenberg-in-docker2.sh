@@ -1,22 +1,38 @@
 #!/usr/bin/env bash
+# WARNING! Read the script before executing! All at your own risk!
+# Install Paperless NGX from here https://community-scripts.github.io/ProxmoxVE/scripts?id=paperless-ngx
+# Then run the script -> bash -c "$(curl -fsSL https://raw.githubusercontent.com/celalettinb-art/paperless/refs/heads/main/paperless-ngx-and-tika-and-gotenberg-in-docker2.sh)"
+# Everything the script does is listed in headings in Script.
 set -e
 
 function post_install_paperless() {
 
-echo "SSH Root Login erlauben (WARNUNG: unsicher)"
+### ===========================================
+### Allow SSH root login (WARNING: insecure)
+### ===========================================
+echo -e "\e[1;33mEnable SSH Root Login (WARNING: insecure)\e[0m"
 sed -i 's/^#\?PermitRootLogin.*/PermitRootLogin yes/' /etc/ssh/sshd_config
 systemctl restart sshd
 
-echo "Zufallspasswort ohne Sonderzeichen generieren"
+### ===========================================
+### Generate random password
+### ===========================================
+echo -e "\e[1;33mGenerate random password\e[0m"
 SCAN_PW=$(tr -dc 'A-Za-z0-9' </dev/urandom | head -c 24)
 echo "$SCAN_PW" > /root/scan.creds
 chmod 600 /root/scan.creds
 
-echo "OCR Sprachen installieren"
+### ===========================================
+### Install OCR languages
+### ===========================================
+echo -e "\e[1;33mInstall OCR languages\e[0m"
 apt update
 apt install -y tesseract-ocr-deu tesseract-ocr-eng tesseract-ocr-tur
 
-echo "Paperless Konfiguration anpassen"
+### ===========================================
+### Customize paperless configuration
+### ===========================================
+echo -e "\e[1;33mEdit Paperless configuration\e[0m"
 CONF="/opt/paperless/paperless.conf"
 mkdir -p "$(dirname "$CONF")"
 touch "$CONF"
@@ -27,7 +43,10 @@ PAPERLESS_OCR_LANGUAGES=eng tur
 PAPERLESS_TIME_ZONE=Europe/Berlin
 EOT
 
-echo "Docker installieren"
+### ===========================================
+### Install Docker
+### ===========================================
+echo -e "\e[1;33mInstall Docker\e[0m"
 apt install -y ca-certificates curl gnupg
 install -m 0755 -d /etc/apt/keyrings
 
@@ -45,14 +64,16 @@ apt install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin
 systemctl enable docker
 systemctl start docker
 
-echo "Startscript fuer Gotenberg & Tika anpassen"
+### ===========================================
+### Customize start script for Gotenberg & Tika
+### ===========================================
+echo -e "\e[1;33mCustomize start script for Gotenberg & Tika\e[0m"
 SCRIPT="/opt/paperless/scripts/start_services.sh"
 mkdir -p "$(dirname "$SCRIPT")"
 
 [ -f "$SCRIPT" ] && cp "$SCRIPT" "${SCRIPT}.bak"
 
 cat <<'EOT' > "$SCRIPT"
-#!/usr/bin/env bash
 
 docker rm -f gotenberg tika 2>/dev/null || true
 
@@ -74,14 +95,20 @@ EOT
 chmod +x "$SCRIPT"
 "$SCRIPT"
 
-echo "Paperless Tika/Gotenberg konfigurieren"
+### ===========================================
+### Configure Tika & Gotenberg in Paperless
+### ===========================================
+echo -e "\e[1;33mConfigure Tika & Gotenberg in Paperless\e[0m"
 grep -q PAPERLESS_TIKA_ENABLED "$CONF" || cat <<EOT >> "$CONF"
 PAPERLESS_TIKA_ENABLED=true
 PAPERLESS_TIKA_ENDPOINT=http://localhost:9998
 PAPERLESS_TIKA_GOTENBERG_ENDPOINT=http://localhost:3000
 EOT
 
-echo "Samba installieren & konfigurieren"
+### ===========================================
+### Install & configure Samba
+### ===========================================
+echo -e "\e[1;33mInstall & configure Samba\e[0m"
 apt install -y samba
 
 id scan &>/dev/null || adduser --disabled-password --gecos "" scan
@@ -90,6 +117,11 @@ echo -e "$SCAN_PW\n$SCAN_PW" | smbpasswd -a scan
 
 cp /etc/samba/smb.conf /etc/samba/smb.conf.bak
 
+### ===========================================
+### Disable [homes] and add [consume]
+### ===========================================
+echo -e "\e[1;33mDisable [homes] and add [consume]\e[0m"
+sed -i '/^\[homes\]/a available = no' /etc/samba/smb.conf
 grep -q "\[consume\]" /etc/samba/smb.conf || cat <<'EOT' >> /etc/samba/smb.conf
 
 [consume]
@@ -111,11 +143,13 @@ systemctl restart smbd
 systemctl enable smbd
 
 echo
-echo "========================================"
-echo "Post-Install abgeschlossen"
-echo "Samba User: scan"
-echo "Samba Passwort: $SCAN_PW"
-echo "========================================"
+echo -e "\e[1;32m========================================\e[0m"
+echo -e "\e[1;32mPost-installation complete\e[0m"
+echo -e "\e[1;32mSamba User: scan\e[0m"
+echo -e "\e[1;32mSamba Password: $SCAN_PW\e[0m"
+echo -e "\e[1;32mYou can read the password for scan here afterwards: cat ~/scan.creds\e[0m"
+echo -e "\e[1;32mPlease be sure to change it! (smbpasswd -a scan)\e[0m"
+echo -e "\e[1;32m========================================\e[0m"
 }
 
 post_install_paperless
