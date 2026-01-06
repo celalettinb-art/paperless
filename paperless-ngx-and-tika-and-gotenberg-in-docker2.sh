@@ -1,11 +1,6 @@
 # bash -c "$(curl -fsSL https://raw.githubusercontent.com/celalettinb-art/paperless/refs/heads/main/paperless-ngx-and-tika-and-gotenberg-in-docker2.sh)"
 
 function post_install_paperless() {
-  msg_info "Running Paperless post-install configuration"
-
-  #pct exec "$CTID" -- bash <<'EOF'
-#set -e
-
 echo "SSH Root Login erlauben"
 sed -i 's/^#\?PermitRootLogin.*/PermitRootLogin yes/' /etc/ssh/sshd_config
 systemctl restart sshd
@@ -91,8 +86,6 @@ systemctl enable smbd
 
 echo "Post-Install abgeschlossen"
 EOF
-
-  msg_ok "Paperless Post-Install Configuration completed"
 }
 
 
