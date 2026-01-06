@@ -1,248 +1,128 @@
 #!/usr/bin/env bash
-source <(curl -fsSL https://raw.githubusercontent.com/community-scripts/ProxmoxVE/main/misc/build.func)
-# Copyright (c) 2021-2025 tteck
-# Author: tteck (tteckster)
-# License: MIT | https://github.com/community-scripts/ProxmoxVE/raw/main/LICENSE
-# Source: https://docs.paperless-ngx.com/
-# bash -c "$(curl -fsSL https://raw.githubusercontent.com/celalettinb-art/paperless/refs/heads/main/paperless-ngx-and-tika-and-gotenberg-in-docker.sh)"
-
-APP="Paperless-ngx"
-var_tags="${var_tags:-document;management}"
-var_cpu="${var_cpu:-2}"
-var_ram="${var_ram:-2048}"
-var_disk="${var_disk:-12}"
-var_os="${var_os:-debian}"
-var_version="${var_version:-13}"
-var_unprivileged="${var_unprivileged:-1}"
-
-header_info "$APP"
-variables
-color
-catch_errors
-
-function update_script() {
-  header_info
-  check_container_storage
-  check_container_resources
-  if [[ ! -d /opt/paperless ]]; then
-    msg_error "No ${APP} Installation Found!"
-    exit
-  fi
-
-  # Check for old data structure and prompt migration (exclude symlinks)
-  if [[ -f /opt/paperless/paperless.conf ]]; then
-    local OLD_DIRS=()
-    [[ -d /opt/paperless/consume && ! -L /opt/paperless/consume ]] && OLD_DIRS+=("consume")
-    [[ -d /opt/paperless/data && ! -L /opt/paperless/data ]] && OLD_DIRS+=("data")
-    [[ -d /opt/paperless/media && ! -L /opt/paperless/media ]] && OLD_DIRS+=("media")
-
-    if [[ ${#OLD_DIRS[@]} -gt 0 ]]; then
-      msg_error "Old data structure detected in /opt/paperless/"
-      msg_custom "📂" "Found directories: ${OLD_DIRS[*]}"
-      echo -e ""
-      msg_custom "🔄" "Migration required to new data structure (/opt/paperless_data/)"
-      msg_custom "📖" "Please follow the migration guide:"
-      echo -e "${TAB}${GATEWAY}${BGN}https://github.com/community-scripts/ProxmoxVE/discussions/9223${CL}"
-      echo -e ""
-      msg_custom "⚠️" "Update aborted. Please migrate your data first."
-      exit 1
-    fi
-  fi
-
-  if check_for_gh_release "paperless" "paperless-ngx/paperless-ngx"; then
-    msg_info "Stopping all Paperless-ngx Services"
-    systemctl stop paperless-consumer paperless-webserver paperless-scheduler paperless-task-queue
-    msg_ok "Stopped all Paperless-ngx Services"
-
-    if grep -q "uv run" /etc/systemd/system/paperless-webserver.service; then
-
-      msg_info "Backing up configuration"
-      local BACKUP_DIR="/opt/paperless_backup_$$"
-      mkdir -p "$BACKUP_DIR"
-      [[ -f /opt/paperless/paperless.conf ]] && cp /opt/paperless/paperless.conf "$BACKUP_DIR/"
-      msg_ok "Backup completed to $BACKUP_DIR"
-
-      PYTHON_VERSION="3.13" setup_uv
-      CLEAN_INSTALL=1 fetch_and_deploy_gh_release "paperless" "paperless-ngx/paperless-ngx" "prebuild" "latest" "/opt/paperless" "paperless*tar.xz"
-      CLEAN_INSTALL=1 fetch_and_deploy_gh_release "jbig2enc" "ie13/jbig2enc" "tarball" "latest" "/opt/jbig2enc"
-
-      . /etc/os-release
-      if [ "$VERSION_CODENAME" = "bookworm" ]; then
-        setup_gs
-      else
-        $STD apt install -y ghostscript
-      fi
-
-      msg_info "Updating Paperless-ngx"
-      cp -r "$BACKUP_DIR"/* /opt/paperless/
-      cd /opt/paperless
-      $STD uv sync --all-extras
-      cd /opt/paperless/src
-      $STD uv run -- python manage.py migrate
-      msg_ok "Updated Paperless-ngx"
-
-      rm -rf "$BACKUP_DIR"
-
-    else
-      msg_warn "You are about to migrate your Paperless-ngx installation to uv!"
-      msg_custom "🔒" "It is strongly recommended to take a Proxmox snapshot first:"
-      echo -e "   1. Stop the container:  pct stop <CTID>"
-      echo -e "   2. Create a snapshot:  pct snapshot <CTID> pre-paperless-uv-migration"
-      echo -e "   3. Start the container again\n"
-
-      read -rp "Have you created a snapshot? [y/N]: " confirm
-      if [[ ! "$confirm" =~ ^([yY]|[yY][eE][sS])$ ]]; then
-        msg_error "Migration aborted. Please create a snapshot first."
-        exit
-      fi
-      msg_info "Migrating old Paperless-ngx installation to uv"
-      rm -rf /opt/paperless/venv
-      find /opt/paperless -name "__pycache__" -type d -exec rm -rf {} +
-
-      msg_info "Backing up configuration"
-      local BACKUP_DIR="/opt/paperless_backup_$$"
-      mkdir -p "$BACKUP_DIR"
-      [[ -f /opt/paperless/paperless.conf ]] && cp /opt/paperless/paperless.conf "$BACKUP_DIR/"
-      msg_ok "Backup completed to $BACKUP_DIR"
-
-      declare -A PATCHES=(
-        ["paperless-consumer.service"]="ExecStart=uv run -- python manage.py document_consumer"
-        ["paperless-scheduler.service"]="ExecStart=uv run -- celery --app paperless beat --loglevel INFO"
-        ["paperless-task-queue.service"]="ExecStart=uv run -- celery --app paperless worker --loglevel INFO"
-        ["paperless-webserver.service"]="ExecStart=uv run -- granian --interface asgi --ws \"paperless.asgi:application\""
-      )
-
-      for svc in "${!PATCHES[@]}"; do
-        path=$(systemctl show -p FragmentPath "$svc" | cut -d= -f2)
-        if [[ -n "$path" && -f "$path" ]]; then
-          sed -i "s|^ExecStart=.*|${PATCHES[$svc]}|" "$path"
-          if [[ "$svc" == "paperless-webserver.service" ]]; then
-            grep -q "^Environment=GRANIAN_HOST=" "$path" ||
-              sed -i '/^\[Service\]/a Environment=GRANIAN_HOST=::' "$path"
-            grep -q "^Environment=GRANIAN_PORT=" "$path" ||
-              sed -i '/^\[Service\]/a Environment=GRANIAN_PORT=8000' "$path"
-            grep -q "^Environment=GRANIAN_WORKERS=" "$path" ||
-              sed -i '/^\[Service\]/a Environment=GRANIAN_WORKERS=1' "$path"
-          fi
-          msg_ok "Patched $svc"
-        else
-          msg_error "Service file for $svc not found!"
-        fi
-      done
-
-      $STD systemctl daemon-reload
-      msg_info "Backing up configuration"
-      BACKUP_DIR="/opt/paperless_backup_$$"
-      mkdir -p "$BACKUP_DIR"
-      [[ -f /opt/paperless/paperless.conf ]] && cp /opt/paperless/paperless.conf "$BACKUP_DIR/"
-      msg_ok "Backup completed to $BACKUP_DIR"
-
-      PYTHON_VERSION="3.13" setup_uv
-      CLEAN_INSTALL=1 fetch_and_deploy_gh_release "paperless" "paperless-ngx/paperless-ngx" "prebuild" "latest" "/opt/paperless" "paperless*tar.xz"
-      CLEAN_INSTALL=1 fetch_and_deploy_gh_release "jbig2enc" "ie13/jbig2enc" "tarball" "latest" "/opt/jbig2enc"
-
-      . /etc/os-release
-      if [ "$VERSION_CODENAME" = "bookworm" ]; then
-        setup_gs
-      else
-        msg_info "Installing Ghostscript"
-        $STD apt install -y ghostscript
-        msg_ok "Installed Ghostscript"
-      fi
-
-      msg_info "Updating Paperless-ngx"
-      cp -r "$BACKUP_DIR"/* /opt/paperless/
-      cd /opt/paperless
-      $STD uv sync --all-extras
-      cd /opt/paperless/src
-      $STD uv run -- python manage.py migrate
-      msg_ok "Paperless-ngx migration and update completed"
-
-      rm -rf "$BACKUP_DIR"
-      if [[ -d /opt/paperless/backup ]]; then
-        rm -rf /opt/paperless/backup
-        msg_ok "Removed old backup directory"
-      fi
-    fi
-
-    msg_info "Starting all Paperless-ngx Services"
-    systemctl start paperless-consumer paperless-webserver paperless-scheduler paperless-task-queue
-    sleep 1
-    msg_ok "Started all Paperless-ngx Services"
-    msg_ok "Updated successfully!"
-  fi
-  exit
-}
-
-function post_install_paperless() {
-  msg_info "Running Paperless post-install configuration"
-
-  pct exec "$CTID" -- bash <<'EOF'
+# WARNING! Read the script before executing! All at your own risk!
+# Install Paperless NGX from here https://community-scripts.github.io/ProxmoxVE/scripts?id=paperless-ngx
+# Then run the script -> bash -c "$(curl -fsSL https://raw.githubusercontent.com/celalettinb-art/paperless/refs/heads/main/paperless-ngx-and-tika-and-gotenberg-in-docker2.sh)"
+# Everything the script does is listed in headings in Script.
 set -e
 
-echo "SSH Root Login erlauben"
+function post_install_paperless() {
+
+### ===========================================
+### Allow SSH root login (WARNING: insecure)
+### ===========================================
+echo -e "\e[1;33mEnable SSH Root Login (WARNING: insecure)\e[0m"
 sed -i 's/^#\?PermitRootLogin.*/PermitRootLogin yes/' /etc/ssh/sshd_config
 systemctl restart sshd
 
-echo "Zufallspasswort ohne Sonderzeichen generieren"
-tr -dc 'A-Za-z0-9' </dev/urandom | head -c 24 > /root/scan.creds
+### ===========================================
+### Generate random password
+### ===========================================
+echo -e "\e[1;33mGenerate random password\e[0m"
+SCAN_PW=$(tr -dc 'A-Za-z0-9' </dev/urandom | head -c 24)
+echo "$SCAN_PW" > /root/scan.creds
 chmod 600 /root/scan.creds
 
-SCAN_PW=$(cat /root/scan.creds)
-
-echo "OCR Sprachen installieren"
+### ===========================================
+### Install OCR languages
+### ===========================================
+echo -e "\e[1;33mInstall OCR languages\e[0m"
 apt update
-apt install -y tesseract-ocr-deu tesseract-ocr-tur
+apt install -y tesseract-ocr-deu tesseract-ocr-eng tesseract-ocr-tur
 
-echo "Paperless Konfiguration anpassen"
+### ===========================================
+### Customize paperless configuration
+### ===========================================
+echo -e "\e[1;33mEdit Paperless configuration\e[0m"
 CONF="/opt/paperless/paperless.conf"
-grep -q PAPERLESS_OCR_LANGUAGE $CONF || cat <<EOT >> $CONF
+mkdir -p "$(dirname "$CONF")"
+touch "$CONF"
+
+grep -q PAPERLESS_OCR_LANGUAGE "$CONF" || cat <<EOT >> "$CONF"
 PAPERLESS_OCR_LANGUAGE=deu
 PAPERLESS_OCR_LANGUAGES=eng tur
 PAPERLESS_TIME_ZONE=Europe/Berlin
 EOT
 
-echo "Docker installieren"
+### ===========================================
+### Install Docker
+### ===========================================
+echo -e "\e[1;33mInstall Docker\e[0m"
 apt install -y ca-certificates curl gnupg
 install -m 0755 -d /etc/apt/keyrings
-curl -fsSL https://download.docker.com/linux/debian/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg
-echo "deb [arch=\$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/debian bookworm stable" \
+
+curl -fsSL https://download.docker.com/linux/debian/gpg \
+  | gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+
+ARCH=$(dpkg --print-architecture)
+
+echo "deb [arch=$ARCH signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/debian bookworm stable" \
   > /etc/apt/sources.list.d/docker.list
+
 apt update
 apt install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin
 
-echo "Startscript fuer Gotenberg & Tika anpassen"
+systemctl enable docker
+systemctl start docker
+
+### ===========================================
+### Customize start script for Gotenberg & Tika
+### ===========================================
+echo -e "\e[1;33mCustomize start script for Gotenberg & Tika\e[0m"
 SCRIPT="/opt/paperless/scripts/start_services.sh"
-cp $SCRIPT ${SCRIPT}.bak
+mkdir -p "$(dirname "$SCRIPT")"
 
-cat <<'EOT' > $SCRIPT
-#!/usr/bin/env bash
-docker run --restart=always -p 3000:3000 -d gotenberg/gotenberg:latest \
-  gotenberg --chromium-disable-javascript=true --chromium-allow-list="file:///tmp/.*"
+[ -f "$SCRIPT" ] && cp "$SCRIPT" "${SCRIPT}.bak"
 
-docker run --restart=always -p 9998:9998 -d apache/tika:latest
+cat <<'EOT' > "$SCRIPT"
+
+docker rm -f gotenberg tika 2>/dev/null || true
+
+docker run -d \
+  --name gotenberg \
+  --restart=always \
+  -p 3000:3000 \
+  gotenberg/gotenberg:latest \
+  gotenberg --chromium-disable-javascript=true \
+            --chromium-allow-list="file:///tmp/.*"
+
+docker run -d \
+  --name tika \
+  --restart=always \
+  -p 9998:9998 \
+  apache/tika:latest
 EOT
 
-chmod +x $SCRIPT
-$SCRIPT
+chmod +x "$SCRIPT"
+"$SCRIPT"
 
-echo "Paperless Tika/Gotenberg konfigurieren"
-grep -q PAPERLESS_TIKA_ENABLED $CONF || cat <<EOT >> $CONF
+### ===========================================
+### Configure Tika & Gotenberg in Paperless
+### ===========================================
+echo -e "\e[1;33mConfigure Tika & Gotenberg in Paperless\e[0m"
+grep -q PAPERLESS_TIKA_ENABLED "$CONF" || cat <<EOT >> "$CONF"
 PAPERLESS_TIKA_ENABLED=true
-PAPERLESS_TIKA_ENDPOINT=http://0.0.0.0:9998
-PAPERLESS_TIKA_GOTENBERG_ENDPOINT=http://0.0.0.0:3000
+PAPERLESS_TIKA_ENDPOINT=http://localhost:9998
+PAPERLESS_TIKA_GOTENBERG_ENDPOINT=http://localhost:3000
 EOT
 
-echo "Samba installieren & konfigurieren"
+### ===========================================
+### Install & configure Samba
+### ===========================================
+echo -e "\e[1;33mInstall & configure Samba\e[0m"
 apt install -y samba
 
-adduser --disabled-password --gecos "" scan
+id scan &>/dev/null || adduser --disabled-password --gecos "" scan
 echo "scan:$SCAN_PW" | chpasswd
 echo -e "$SCAN_PW\n$SCAN_PW" | smbpasswd -a scan
 
 cp /etc/samba/smb.conf /etc/samba/smb.conf.bak
 
-cat <<'EOT' >> /etc/samba/smb.conf
+### ===========================================
+### Disable [homes] and add [consume]
+### ===========================================
+echo -e "\e[1;33mDisable [homes] and add [consume]\e[0m"
+sed -i '/^\[homes\]/a available = no' /etc/samba/smb.conf
+grep -q "\[consume\]" /etc/samba/smb.conf || cat <<'EOT' >> /etc/samba/smb.conf
 
 [consume]
 path = /opt/paperless_data/consume
@@ -255,27 +135,21 @@ create mask = 0664
 directory mask = 0775
 EOT
 
-sed -i '/\[homes\]/,/^$/s/^/;/' /etc/samba/smb.conf
-
+mkdir -p /opt/paperless_data/consume
 chown -R scan:scan /opt/paperless_data/consume
 chmod -R 775 /opt/paperless_data/consume
 
 systemctl restart smbd
 systemctl enable smbd
 
-echo "Post-Install abgeschlossen"
-EOF
-
-  msg_ok "Paperless Post-Install Configuration completed"
+echo
+echo -e "\e[1;32m========================================\e[0m"
+echo -e "\e[1;32mPost-installation complete\e[0m"
+echo -e "\e[1;32mSamba User: scan\e[0m"
+echo -e "\e[1;32mSamba Password: $SCAN_PW\e[0m"
+echo -e "\e[1;32mYou can read the password for scan here afterwards: cat ~/scan.creds\e[0m"
+echo -e "\e[1;32mPlease be sure to change it! (smbpasswd -a scan)\e[0m"
+echo -e "\e[1;32m========================================\e[0m"
 }
 
-
-start
-build_container
 post_install_paperless
-description
-
-msg_ok "Completed Successfully!\n"
-echo -e "${CREATING}${GN}${APP} setup has been successfully initialized!${CL}"
-echo -e "${INFO}${YW} Access it using the following URL:${CL}"
-echo -e "${TAB}${GATEWAY}${BGN}http://${IP}:8000${CL}"
