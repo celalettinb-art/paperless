@@ -4,13 +4,12 @@ https://docs.paperless-ngx.com/configuration/
 https://github.com/paperless-ngx/paperless-ngx  
 https://ocrmypdf.readthedocs.io/en/latest/languages.html  
 https://www.technik22.de/d/937-paperless-ngx-tika-gotenberg/2  
-| :point_up:    | Dokumente werden hier abgespeichert: /opt/paperless_data/media|
-|---------------|:----------------------------------------| 
+Dokumente werden hier abgespeichert: /opt/paperless_data/media  
 
-1. Paperless über PVE Helper Script installieren und anpassen
-Siehe: https://community-scripts.github.io/ProxmoxVE/scripts?id=paperless-ngx
+1. Paperless über PVE Helper Script installieren und anpassen  
+Siehe: https://community-scripts.github.io/ProxmoxVE/scripts?id=paperless-ngx  
 
-# Sicherheitshalber das Password von Root nochmal setzen:
+* Sicherheitshalber das Password von Root nochmal setzen:
 passwd root
 
 # Root SSH Konfig gewähren:
