@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # WARNING! Read the script before executing! All at your own risk!
 # Install Paperless NGX from here https://community-scripts.github.io/ProxmoxVE/scripts?id=paperless-ngx
-# Then run the script -> bash -c "$(curl -fsSL https://raw.githubusercontent.com/celalettinb-art/paperless/refs/heads/main/paperless-ngx-and-tika-and-gotenberg-in-docker.sh)"
+# Then run the script -> bash -c "$(curl -fsSL https://raw.githubusercontent.com/celalettinb-art/paperless/refs/heads/main/paperless-ngx_install-tika-and-gotenberg-in-docker.sh)"
 # Everything the script does is listed in headings in Script.
 set -e
 
