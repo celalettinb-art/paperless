@@ -14,13 +14,20 @@ Siehe: https://community-scripts.github.io/ProxmoxVE/scripts?id=paperless-ngx
 passwd root
 ~~~
 
-# Root SSH Konfig gewähren:
+* Root SSH Konfig gewähren:
+~~~
 nano /etc/ssh/sshd_config
+~~~
+~~~
 PermitRootLogin yes
+~~~
+~~~
 systemctl restart sshd.service
-
-# Zugansdaten finden:
+~~~
+* Zugansdaten finden:
+~~~
 cat ~/paperless-ngx.creds
+~~~
 
 # Installiere OCR Deutsch:
 apt-get install tesseract-ocr-deu
