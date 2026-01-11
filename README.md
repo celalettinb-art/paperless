@@ -9,8 +9,8 @@ Dokumente werden hier abgespeichert: /opt/paperless_data/media
 1. Paperless über PVE Helper Script installieren und anpassen  
 Siehe: https://community-scripts.github.io/ProxmoxVE/scripts?id=paperless-ngx  
 
-* Sicherheitshalber das Password von Root nochmal setzen:
-passwd root
+* Sicherheitshalber das Password von Root nochmal setzen:  
+~~~ passwd root
 
 # Root SSH Konfig gewähren:
 nano /etc/ssh/sshd_config
