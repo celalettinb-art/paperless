@@ -24,28 +24,44 @@ PermitRootLogin yes
 ~~~
 systemctl restart sshd.service
 ~~~
+
 * Zugansdaten finden:
 ~~~
 cat ~/paperless-ngx.creds
 ~~~
 
-# Installiere OCR Deutsch:
+* Installiere OCR Deutsch:
+~~~
 apt-get install tesseract-ocr-deu
+~~~
 
-# Paperless Konfiguration anpassen:
+* Paperless Konfiguration anpassen:
+~~~
 nano /opt/paperless/paperless.conf
+~~~
+~~~
 PAPERLESS_OCR_LANGUAGE=deu
 PAPERLESS_TIME_ZONE=Europe/Berlin
 PAPERLESS_OCR_LANGUAGES=eng tur
+~~~
 
-2. Docker installieren:
-Quelle: https://www.thomas-krenn.com/en/wiki/Docker_installation_on_Debian_12
-# Installiere die für die Installation erforderlichen Pakete:
+2. Docker installieren:  
+Quelle: https://www.thomas-krenn.com/en/wiki/Docker_installation_on_Debian_12  
+* Installiere die für die Installation erforderlichen Pakete:
+~~~
 apt-get update
+~~~
+~~~
 apt-get install ca-certificates curl
+~~~
+~~~
 install -m 0755 -d /etc/apt/keyrings
+~~~
+~~~
 curl -fsSL https://download.docker.com/linux/debian/gpg -o /etc/apt/keyrings/docker.asc
+~~~
 chmod a+r /etc/apt/keyrings/docker.asc
+~~~
 
 # Füge das Repository zu den Apt-Quellen hinzu:
 echo \
