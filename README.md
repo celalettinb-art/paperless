@@ -60,67 +60,103 @@ install -m 0755 -d /etc/apt/keyrings
 ~~~
 curl -fsSL https://download.docker.com/linux/debian/gpg -o /etc/apt/keyrings/docker.asc
 ~~~
+~~~
 chmod a+r /etc/apt/keyrings/docker.asc
 ~~~
 
-# Füge das Repository zu den Apt-Quellen hinzu:
+* Füge das Repository zu den Apt-Quellen hinzu:
+~~~
 echo \
   "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/debian \
   $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | \
   tee /etc/apt/sources.list.d/docker.list > /dev/null
+~~~
+~~~
 apt-get update
+~~~
 
-# GPG-Schlüssel herunterladen und Repository im System speichern:
+* GPG-Schlüssel herunterladen und Repository im System speichern:
+~~~
 curl -fsSL https://download.docker.com/linux/debian/gpg | gpg --dearmor -o /usr/share/keyrings/docker.gpg
-echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker.gpg] https://download.docker.com/linux/debian bookworm stable" |tee /etc/apt/sources.list.d/docker.list > /dev/null 
+~~~
+~~~
+echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker.gpg] https://download.docker.com/linux/debian bookworm stable" |tee /etc/apt/sources.list.d/docker.list > /dev/null
+~~~
+~~~
 apt update 
+~~~
 
-# Installiere die Docker-Pakete:
+* Installiere die Docker-Pakete:
+~~~
 apt-get install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+~~~
 
 3. Den Start Script sichern und bearbeiten
-# Sichere Startscript:
+* Sichere Startscript:
+~~~
 cp /opt/paperless/scripts/start_services.sh /opt/paperless/scripts/start_services.sh.bak
+~~~
 
-# Startscript bearbeiten:
+* Startscript bearbeiten:
+~~~
 nano /opt/paperless/scripts/start_services.sh
+~~~
 
 Inhalt löschen und das hinzufügen:
+~~~
+#!/usr/bin/env bash
 
-	#!/usr/bin/env bash
+docker run --restart=always -p 3000:3000 -d gotenberg/gotenberg:latest gotenberg --chromium-disable-javascript=true --chromium-allow-list="file:///tmp/.*"
+docker run --restart=always -p 9998:9998 -d docker.io/apache/tika:latest
+~~~
 
-	docker run --restart=always -p 3000:3000 -d gotenberg/gotenberg:latest gotenberg --chromium-disable-javascript=true --chromium-allow-list="file:///tmp/.*"
-	docker run --restart=always -p 9998:9998 -d docker.io/apache/tika:latest
-
-# Das skript einmal manuell ausführen:
+* Das skript einmal manuell ausführen:
+~~~
 /opt/paperless/scripts/start_services.sh
+~~~
 
 4. Paperless Konfiguration anpassen
-# Konfigurationsdatei anpassen:
+* Konfigurationsdatei anpassen:
+~~~
 nano  /opt/paperless/paperless.conf
+~~~
+~~~
 PAPERLESS_TIKA_ENABLED=true
 PAPERLESS_TIKA_ENDPOINT=http://0.0.0.0:9998
 PAPERLESS_TIKA_GOTENBERG_ENDPOINT=http://0.0.0.0:3000
+~~~
 
-# Container neustarten:
+* Container neustarten:
+~~~
 reboot
+~~~
 
 5. SMB-Server im LXC einrichten
-# scan User in Linux anlegen mit
+* scan User in Linux anlegen mit
+~~~
 adduser scan
+~~~
 
-# Samba installieren:
+* Samba installieren:
+~~~
 apt install samba -y
+~~~
 
-# Denselben scan User verwenden, dann sind Rechte konsistent:
+* Denselben scan User verwenden, dann sind Rechte konsistent:
+~~~
 smbpasswd -a scan
+~~~
 
-# Samba-Konfiguration sichern und anpassen:
+* Samba-Konfiguration sichern und anpassen:
+~~~
 cp /etc/samba/smb.conf /etc/samba/smb.conf.bak
+~~~
+
+* Am Ende der Datei einen Share für den Consume-Ordner eintragen:
+~~~
 nano /etc/samba/smb.conf
-
-# Am Ende der Datei einen Share für den Consume-Ordner eintragen:
-
+~~~
+~~~
 [consume]
    path = /opt/paperless_data/consume
    browseable = yes
@@ -130,40 +166,58 @@ nano /etc/samba/smb.conf
    force group = scan
    create mask = 0664
    directory mask = 0775
+~~~
 
-# Wenn gewünscht Freigeba homes deaktivieren indem man unter [homes] folgendes einfügt:
+* Wenn gewünscht Freigeba homes deaktivieren indem man unter [homes] folgendes einfügt:
+~~~
 available = no
+~~~
 
-# Samba neu starten:
+* Samba neu starten:
+~~~
 systemctl restart smbd
+~~~
+~~~
 systemctl enable smbd
+~~~
 
-# Den Owner von consume Ordner ändern und die Berechtigungen anpassen:
+* Den Owner von consume Ordner ändern und die Berechtigungen anpassen:
+
+~~~
 chown -R scan:scan /opt/paperless_data/consume
+~~~
+~~~
 chmod -R 775 /opt/paperless_data/consume
+~~~
 
-# Jetzt kannst du vom Scanner oder Windows/macOS-Rechner verbinden:
+* Jetzt kannst du vom Scanner oder Windows/macOS-Rechner verbinden:
 Pfad: \\<LXC-IP>\consume
 Benutzer: scan
 Passwort: das bei smbpasswd gesetzte.
 
-# Zum Schluss kontrollieren ob irgendein Dienst nicht arbeitet:
+* Zum Schluss kontrollieren ob irgendein Dienst nicht arbeitet:
+~~~
 systemctl --failed
+~~~
+~~~
 systemctl --type=service --state=running list-units
+~~~
+~~~
 journalctl -u <UNITNAME>
+~~~
 
 6. Sonstiges
-# Beispiel für Speicherpfade in Paperless:
+* Beispiel für Speicherpfade in Paperless:
 {{ owner_username }}/10_Persönliche-Dokumente/{{ correspondent }}/{{ created_year }}/{{ created_year }}{{ created_month }}{{ created_day }}_{{ title }}
 
-# Mit Powershell Tika prüfen:
+* Mit Powershell Tika prüfen:
 Invoke-WebRequest -UseBasicParsing -Uri "http://<LXC-IP>/tika" -InFile "C:\Users\Administrator\Downloads\PSVC.docx" -Method Put
 
-# Ob Tika und Gotenberg läuft:
+* Ob Tika und Gotenberg läuft:
 http://<LXC-IP>:9998/
 http://<LXC-IP>:3000/health
 
-# Weiteres
+* Weiteres
 [Real World Examples] - Document Types
 https://github.com/paperless-ngx/paperless-ngx/discussions/1833
 https://digital-cleaning.de/index.php/paperless-ngx-teil-17-unterordner-des-consume-verzeichnisses-nutzen/
@@ -181,17 +235,17 @@ Der Korrespondent bezieht sich auf die Person/Organisation, mit der Sie in dem D
 	Auch hier können Sie wieder weit gefasst sein, da der Versuch, es einzugrenzen, Sie in den Wahnsinn treiben wird.
 
 Tags werden verwendet, um die folgenden grundlegenden Fragen zu beantworten:
-	* Auf wen bezieht sich das Dokument? In meinem Fall habe ich Tags für mich selbst, meine Frau, die Kinder und die Hunde.
+	Auf wen bezieht sich das Dokument? In meinem Fall habe ich Tags für mich selbst, meine Frau, die Kinder und die Hunde.
 	Sie haben alle die gleiche Farbe, um dies leicht zu kennzeichnen. Beachten Sie, dass dies NICHT dasselbe ist wie der Korrespondent.
 
-	* Worauf bezieht sich das Dokument? Bezieht es sich auf Ihren Autokredit? Bezieht es sich auf die Instandhaltung Ihres Hauses?
+	Worauf bezieht sich das Dokument? Bezieht es sich auf Ihren Autokredit? Bezieht es sich auf die Instandhaltung Ihres Hauses?
 	Markieren Sie diese Tags mit einer anderen Farbe, damit Sie sie leicht erkennen können.
 
-	* Wann sind die Informationen in diesem Dokument relevant? Handelt es sich um eine Rechnung von vor zwei Jahren?
+	Wann sind die Informationen in diesem Dokument relevant? Handelt es sich um eine Rechnung von vor zwei Jahren?
 	Bezieht es sich auf Ihre Steuern für 2022? Ich persönlich erstelle Tags für das Jahr, in dem ich die Rechnung erhalten habe,
 	da dies das Sortieren erleichtert. Bei Bedarf können Sie dies weiter nach Monaten unterteilen.
 
-	* Ich erstelle auch Tags für spezielle Kategorien, die ich nachverfolgen muss. Ich habe beispielsweise ein Tag für alle Dokumente,
+	Ich erstelle auch Tags für spezielle Kategorien, die ich nachverfolgen muss. Ich habe beispielsweise ein Tag für alle Dokumente,
 	die wir im kommenden Jahr für unsere Steuern benötigen, oder für wichtige Dokumente (Geburtsurkunden usw.).
 	Dies hilft bei der weiteren Unterteilung.
 
