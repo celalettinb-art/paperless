@@ -10,7 +10,9 @@ Dokumente werden hier abgespeichert: /opt/paperless_data/media
 Siehe: https://community-scripts.github.io/ProxmoxVE/scripts?id=paperless-ngx  
 
 * Sicherheitshalber das Password von Root nochmal setzen:  
-~~~ passwd root
+~~~
+passwd root
+~~~
 
 # Root SSH Konfig gewähren:
 nano /etc/ssh/sshd_config
