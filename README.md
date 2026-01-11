@@ -4,7 +4,8 @@ https://docs.paperless-ngx.com/configuration/
 https://github.com/paperless-ngx/paperless-ngx  
 https://ocrmypdf.readthedocs.io/en/latest/languages.html  
 https://www.technik22.de/d/937-paperless-ngx-tika-gotenberg/2  
-# Dokumente werden hier abgespeichert: /opt/paperless_data/media
+| :point_up:    | Dokumente werden hier abgespeichert: /opt/paperless_data/media|
+|---------------|:----------------------------------------| 
 
 1. Paperless über PVE Helper Script installieren und anpassen
 Siehe: https://community-scripts.github.io/ProxmoxVE/scripts?id=paperless-ngx
