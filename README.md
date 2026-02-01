@@ -30,9 +30,11 @@ systemctl restart sshd.service
 cat ~/paperless-ngx.creds
 ~~~
 
-* Installiere OCR Deutsch:
+* Installiere OCR:
 ~~~
 apt-get install tesseract-ocr-deu
+apt-get install tesseract-ocr-bul
+apt-get install tesseract-ocr-tur
 ~~~
 
 * Paperless Konfiguration anpassen:
