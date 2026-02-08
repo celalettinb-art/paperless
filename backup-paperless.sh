@@ -6,6 +6,7 @@
 # username=USERNAME
 # password=PASSWORD
 # Modify permissions for the created .smbcredentials file: chmod 600 /root/.smbcredentials
+# Make the script executable: chmod +x /opt/paperless/backup.sh
 # Cronjob: 0 3 * * * /path/to/script.sh >> /var/log/backup-paperless.log 2>&1
 
 # mount SMB-Share mounten 
