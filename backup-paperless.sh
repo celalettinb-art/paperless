@@ -6,6 +6,7 @@
 # username=USERNAME
 # password=PASSWORD
 # Modify permissions for the created .smbcredentials file: chmod 600 /root/.smbcredentials
+# Cronjob: 0 3 * * * /path/to/script.sh >> /var/log/backup-paperless.log 2>&1
 
 # mount SMB-Share mounten 
 mount -t cifs //192.168.1.8/Backup/paperless /mnt/backup-paperless \
