@@ -8,28 +8,30 @@
 # domain=WORKGROUP # optional
 # Modify permissions for the created .smbcredentials file: chmod 600 /root/.smbcredentials
 # Make the script executable: chmod +x /path/to/script.sh
-# Cronjob: 0 3 * * * /path/to/script.sh >> /var/log/backup-paperless.log 2>&1
+# Cronjob: 0 3 * * 0 /path/to/script.sh >> /var/log/backup-paperless.log 2>&1
 
-# mount SMB-Share mounten 
-mount -t cifs //192.168.1.8/Backup/paperless /mnt/backup-paperless \
-  -o credentials=/root/.smbcredentials,iocharset=utf8,nofail
+#!/bin/bash
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 
-# Dateien löschen, die älter als 14 Tage sind
-find /mnt/backup-paperless -type f -mtime +14 -delete
+set -e
 
-# Export-Verzeichnis anlegen
-mkdir /opt/paperless/export/$(date +%Y-%m-%d)
-chmod 777 /opt/paperless/export/$(date +%Y-%m-%d)
+# Configuration
+DATE=$(date +%Y-%m-%d)
+SERVER="//192.168.1.8/Backup"
+EXPORT_DIR="/opt/paperless/export/$DATE"
+REMOTE_DIR="paperless" 
+CREDS="/root/.smbcredentials"
 
-# Paperless Export
-cd /opt/paperless/src/ || exit 1
-./manage.py document_exporter ../export/$(date +%Y-%m-%d)/ -z
+# Create Export Folder
+mkdir -p "$EXPORT_DIR"
+chmod 777 "$EXPORT_DIR"
 
-# ZIP ins SMB-Share verschieben
-mv /opt/paperless/export/$(date +%Y-%m-%d)/export-$(date +%Y-%m-%d).zip /mnt/backup-paperless
+# Run Paperless Export
+cd /opt/paperless/src/
+uv run ./manage.py document_exporter "$EXPORT_DIR/" -z -f -p -d --no-progress-bar
 
-# Temporäres Export-Verzeichnis löschen
-rm -r /opt/paperless/export/$(date +%Y-%m-%d)/
+# Upload
+smbclient "$SERVER" -A="$CREDS" -c "cd $REMOTE_DIR; put $EXPORT_DIR/export-$DATE.zip export-$DATE.zip"
 
-# SMB-Share aushängen
-umount /mnt/backup-paperless
+# Remove Folder
+rm -rf "$EXPORT_DIR"
