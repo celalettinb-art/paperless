@@ -5,6 +5,7 @@
 # Add and customize the lines below:
 # username=USERNAME
 # password=PASSWORD
+# domain=WORKGROUP # optional
 # Modify permissions for the created .smbcredentials file: chmod 600 /root/.smbcredentials
 # Make the script executable: chmod +x /opt/paperless/backup.sh
 # Cronjob: 0 3 * * * /path/to/script.sh >> /var/log/backup-paperless.log 2>&1
