@@ -231,7 +231,8 @@ CSRF-Verifizierung fehlgeschlagen. Anfrage abgebrochen -> PAPERLESS_URL setzen
 ~~~
 * netbird  
 Agent über curl installieren  
-netbird up -> über die angegebene URL bestätigen  
+netbird up -> über die angegebene URL bestätigen
+~~~
   completion  Generate the autocompletion script for the specified shell  
   debug       Debugging commands  
   deregister  Deregister from the NetBird management service and delete this peer  
@@ -247,3 +248,4 @@ netbird up -> über die angegebene URL bestätigen
   status      Display NetBird client status  
   up          Connect to the NetBird network  
   version     Print the NetBird's client application version  
+~~~
