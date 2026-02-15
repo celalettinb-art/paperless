@@ -230,7 +230,7 @@ CSRF-Verifizierung fehlgeschlagen. Anfrage abgebrochen -> PAPERLESS_URL setzen
 /opt/paperless/src/manage.py
 ~~~
 * netbird
-Agent über curl installiern
+Agent über curl installieren
 netbird up -> über die angegebene URL bestätigen
   completion  Generate the autocompletion script for the specified shell
   debug       Debugging commands
