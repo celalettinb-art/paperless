@@ -209,17 +209,22 @@ journalctl -u <UNITNAME>
 ~~~
 
 6. Sonstiges
-* Beispiel für Speicherpfade in Paperless:  
+* Beispiel für Speicherpfade in Paperless:
+~~~
 {{ owner_username }}/10_Persönliche-Dokumente/{{ correspondent }}/{{ created_year }}/{{ created_year }}{{ created_month }}{{ created_day }}_{{ title }}  
-
-* Mit Powershell Tika prüfen:  
+~~~
+* Mit Powershell Tika prüfen:
+~~~
 Invoke-WebRequest -UseBasicParsing -Uri "http://<LXC-IP>/tika" -InFile "C:\Users\Administrator\Downloads\PSVC.docx" -Method Put  
-
-* Ob Tika und Gotenberg läuft:  
+~~~
+* Ob Tika und Gotenberg läuft:
+~~~
 http://<LXC-IP>:9998/  
 http://<LXC-IP>:3000/health  
-
-* Weiteres  
+~~~
+* Weiteres
+~~~
 /opt/paperless_data/media/documents/archive # as PDF/A
 /opt/paperless_data/media/documents/originals
 CSRF-Verifizierung fehlgeschlagen. Anfrage abgebrochen -> PAPERLESS_URL setzen
+~~~
