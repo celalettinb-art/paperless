@@ -227,4 +227,23 @@ http://<LXC-IP>:3000/health
 /opt/paperless_data/media/documents/archive # as PDF/A
 /opt/paperless_data/media/documents/originals
 CSRF-Verifizierung fehlgeschlagen. Anfrage abgebrochen -> PAPERLESS_URL setzen
+/opt/paperless/src/manage.py
 ~~~
+* netbird
+Agent über curl installiern
+netbird up -> über die angegebene URL bestätigen
+  completion  Generate the autocompletion script for the specified shell
+  debug       Debugging commands
+  deregister  Deregister from the NetBird management service and delete this peer
+  down        Disconnect from the NetBird network
+  forwarding  List forwarding rules
+  help        Help about any command
+  login       Log in to the NetBird network
+  networks    Manage connections to NetBird Networks and Resources
+  profile     Manage NetBird client profiles
+  service     Manage the NetBird daemon service
+  ssh         Connect to a NetBird peer via SSH
+  state       Manage daemon state
+  status      Display NetBird client status
+  up          Connect to the NetBird network
+  version     Print the NetBird's client application version
