@@ -118,7 +118,7 @@ docker run --restart=always -p 9998:9998 -d docker.io/apache/tika:latest
 ~~~
 
 4. Paperless Konfiguration anpassen
-* Konfigurationsdatei anpassen:
+* Konfigurationsdatei öffnen:
 ~~~
 nano  /opt/paperless/paperless.conf
 ~~~
