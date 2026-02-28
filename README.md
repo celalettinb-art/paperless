@@ -207,8 +207,19 @@ systemctl --type=service --state=running list-units
 ~~~
 journalctl -u <UNITNAME>
 ~~~
-
-6. Sonstiges
+6. Mailversand
+In die Konfigurationsdatei noch folgendes einfügen (nano  /opt/paperless/paperless.conf):
+~~~
+# E-mail Seetings
+PAPERLESS_EMAIL_HOST=smtp.1blu.de
+PAPERLESS_EMAIL_PORT=587
+PAPERLESS_EMAIL_HOST_USER=<USERNAME>
+PAPERLESS_EMAIL_FROM=my@domain.org
+PAPERLESS_EMAIL_HOST_PASSWORD=<PASSWORD>
+PAPERLESS_EMAIL_USE_TLS=true
+PAPERLESS_EMAIL_USE_SSL=false
+~~~ 
+7. Sonstiges
 * Beispiel für Speicherpfade in Paperless:
 ~~~
 {{ owner_username }}/10_Persönliche-Dokumente/{{ correspondent }}/{{ created_year }}/{{ created_year }}{{ created_month }}{{ created_day }}_{{ title }}  
