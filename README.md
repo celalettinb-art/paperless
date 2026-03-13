@@ -14,7 +14,7 @@ Siehe: https://community-scripts.github.io/ProxmoxVE/scripts?id=paperless-ngx
 passwd root
 ~~~
 
-* Root SSH Konfig gewähren:
+* Root SSH Zugriff gewähren:
 ~~~
 nano /etc/ssh/sshd_config
 ~~~
