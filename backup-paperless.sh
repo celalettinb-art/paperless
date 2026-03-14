@@ -22,7 +22,6 @@
 #     $date = (Get-Date).AddDays(-31)
 #     Get-ChildItem D:\Backup\paperless | Where-Object {$_.LastWriteTime -lt $date} | Remove-Item -Force
 
-#!/bin/bash
 PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 
 set -e
