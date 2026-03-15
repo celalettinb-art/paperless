@@ -20,7 +20,7 @@
 #    grep CRON /var/log/syslog
 #    journalctl -u cron -f
 ## Clean up old backup files on Windows, where the SMB share is running, with a Powershell script:
-#     $date = (Get-Date).AddDays(-31)
+#     $date = (Get-Date).AddDays(-7)
 #     Get-ChildItem D:\Backup\paperless | Where-Object {$_.LastWriteTime -lt $date} | Remove-Item -Force
 
 PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
