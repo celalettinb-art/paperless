@@ -11,7 +11,8 @@
 # Create a file in /root/ with the name backup-paperless.sh and add this script content: nano /root/backup-paperless.sh
 # Make the script executable: chmod +x /root/backup-paperless.sh
 # Cronjob: 0 3 * * 0 /root/backup-paperless.sh >> /var/log/smb_backup.log 2>&1
-# List Cronjobs: crontab -l | Edit Cronjobs crontab -e
+# List Cronjobs: crontab -l
+# Edit Cronjobs: crontab -e
 # Test by executing manually: /usr/bin/env -i HOME=/root PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bi  /root/backup-paperless.sh  >> /var/log/smb_backup.log 2>&1
 ## Read logs:
 #    tail -n 50 /var/log/smb_backup.log
